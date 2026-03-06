@@ -1,4 +1,0 @@
-worker37011:41420:42894 [0] MCCL RECORD NET/IB : Got async event : port error
-worker37011:41420:42894 [0] MCCL RECORD NET/IB : Got async event : GID table change
-worker37011:41420:42894 [0] MCCL RECORD NET/IB : Got async event : GID table change
-worker37011:41420:48376 [0] MCCL RECORD NET/IB [mlx5_5] : Got completion from peer 10.121.36.91<48022> with error 12, opcode 129, len 32625, vendor err 129

@@ -253,6 +253,13 @@ def train_step(forward_step_func, data_iterator,
             micro_batch_size=args.micro_batch_size,
             decoder_seq_length=args.decoder_seq_length,
             forward_only=False)
+        '''
+        print(f'!!!!! model {model}')
+        for name, param in model[0].named_parameters():
+            if param.grad is None:
+                print(f"ERROR: Parameter '{name}' has grad=None after backward, requires_grad={param.requires_grad}")
+        exit()
+        '''
     should_checkpoint, should_exit, exit_code = rerun_state_machine.should_checkpoint_and_exit()
     if should_exit:
         return {}, True, should_checkpoint, should_exit, exit_code, None, None

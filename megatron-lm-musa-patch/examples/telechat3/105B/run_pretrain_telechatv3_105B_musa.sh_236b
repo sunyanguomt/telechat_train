@@ -1,9 +1,7 @@
- #!/bin/bash
- # pip install numpy==1.26.0
- # cp /mnt/yanguo.sun/lib/libmccl* /usr/local/musa/lib
- # pip install /mnt/yanguo.sun/deep_ep-1.1.0+f561e5c-cp310-cp310-linux_x86_64.whl
- pip uninstall transformer_engine -y
- pip install /mnt/yanguo.sun/dianxin/TransformerEngine/wheel/transformer_engine-2.0.0+d6f7238-cp310-cp310-linux_x86_64.whl
+#!/bin/bash
+ pip install numpy==1.26.0
+ cp /mnt/yanguo.sun/lib/libmccl* /usr/local/musa/lib
+ pip install /mnt/yanguo.sun/deep_ep-1.1.0+f561e5c-cp310-cp310-linux_x86_64.whl
 
 set -u
   WORK_HOME=$1
@@ -117,16 +115,14 @@ MODEL_ARGS=(
     --moe-layer-freq [0]+[1]*44
     --moe-ffn-hidden-size 1536
     --moe-router-dtype fp32
-    --moe-router-score-function sigmoid
+    --moe-router-score-function softmax
     --moe-router-bias-update-rate 1e-4
     --moe-router-topk 4
     --moe-router-pre-softmax
     --moe-router-topk-scaling-factor 2.8
     --moe-shared-expert-intermediate-size 1536
-    --moe-router-load-balancing-type seq_aux_loss
-    --moe-aux-loss-coeff 1e-3
-    --moe-token-dispatcher-type flex
-    --moe-enable-deepep
+    --moe-router-load-balancing-type aux_loss
+    --moe-token-dispatcher-type alltoall
     --moe-token-drop-policy probs
     --moe-grouped-gemm
     --seq-length  4096
@@ -141,9 +137,8 @@ MODEL_ARGS=(
     --mtp-num-layers 1
     --transformer-impl transformer_engine
     --distributed-backend nccl
-    --rope-type rope
-    --no-rope-fusion
-    --moe-router-enable-expert-bias
+    --rope-type yarn
+    --enable-experimental
 )
 # test 236B
 # --moe-router-load-balancing-type seq_aux_loss

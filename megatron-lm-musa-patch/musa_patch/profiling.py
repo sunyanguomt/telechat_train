@@ -24,6 +24,7 @@ MEMORY_SNAPSHOT_MAX_ENTRIES = 100000
 def maybe_enable_profiling(args, global_step):
     #add tarce related centext: renll
     on_demand_profiling = int(os.getenv("KINETO_USE_DAEMON", 0))
+
     if on_demand_profiling == 1:
         training_job_path = os.getenv("TRAINING_JOB_PATH", "/home/dist")
         rank_pid_relation_dir = os.getenv("RANK_PID_RELATION_DIR", "rank_pid_relation_dir")
@@ -57,11 +58,12 @@ def maybe_enable_profiling(args, global_step):
     with_stack = int(os.getenv("PROFILER_WITH_STACK", 1))
     with_modules = int(os.getenv("PROFILER_WITH_MODULES", 1))
     kineto_log_level = int(os.getenv("KINETO_LOG_LEVEL", 0))
+    rank = torch.distributed.get_rank()
 
-    if enable_profiling:
+    if enable_profiling and rank < 8:
         profile_freq = profile_freq
 
-        rank = torch.distributed.get_rank()
+        # rank = torch.distributed.get_rank()
 
         def trace_handler(prof):
             curr_trace_dir_name = "iteration_" + str(prof.step_num)

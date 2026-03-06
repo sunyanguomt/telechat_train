@@ -1,1 +1,0 @@
-worker34070:11641:17216 [0] MCCL RECORD NET/IB [mlx5_6] : Got completion from peer 10.121.35.72<38014> with error 12, opcode 129, len 32654, vendor err 129
