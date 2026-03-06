@@ -163,7 +163,8 @@ class YarnRotaryEmbedding(RotaryEmbedding):
         self.dtype_cached = dtype
         self.packed_seq_cached = packed_seq
 
-        emb, _mscale = self.forward(seq_len, offset, packed_seq)
+        # emb, _mscale = self.forward(seq_len, offset, packed_seq)
+        emb, _mscale = self.forward(seq_len, offset)
         self.register_buffer(
             "cos_cached", (emb.cos() * _mscale).to(dtype).contiguous(), persistent=False
         )

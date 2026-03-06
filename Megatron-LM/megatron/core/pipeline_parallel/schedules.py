@@ -32,6 +32,7 @@ from .combined_1f1b import (
     combined_1f1b_schedule_for_interleaved_pipelining,
     combined_1f1b_schedule_for_no_pipelining,
 )
+import time
 
 # Types
 Shape = Union[List[int], torch.Size]
@@ -2174,7 +2175,6 @@ def forward_backward_pipelining_without_interleaving(
             ) >= config.num_microbatches_with_partial_activation_checkpoints
         else:
             checkpoint_activations_microbatch = None
-
         output_tensor, num_tokens = forward_step(
             forward_step_func,
             data_iterator,

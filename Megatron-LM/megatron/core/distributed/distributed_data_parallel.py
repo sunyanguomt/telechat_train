@@ -144,6 +144,7 @@ class DistributedDataParallel(_BaseDataParallel):
                 dense_params.append(param)
             else:
                 expert_parallel_params.append(param)
+        self._param_to_name = param_to_name.copy()
 
         def _allocate_buffers_for_parameters(
             input_params, data_parallel_group, gradient_scaling_factor
@@ -450,6 +451,12 @@ class DistributedDataParallel(_BaseDataParallel):
                 return
 
             if param in self.param_to_bucket_group:
+                #print('##############')
+                #print(f'!!!! param.grad {param.grad}')
+                #param_in_bucket = param in self.param_to_bucket_group
+                #print(f'!!!!!!! in_param_to_bucket_group {param_in_bucket}')
+                #print(f'!!!!! shape {param.shape}')
+                #print(f'!!!!!! param_to_name[param] {self._param_to_name[param]}')
                 assert param.requires_grad
                 if self.ddp_config.overlap_grad_reduce:
                     assert (
