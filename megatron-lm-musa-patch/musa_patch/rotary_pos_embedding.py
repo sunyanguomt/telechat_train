@@ -58,6 +58,7 @@ def apply_rotary_pos_emb_bshd(t: Tensor, freqs: Tensor, rotary_interleaved: bool
     Returns:
         Tensor: The input tensor after applying RoPE
     """
+    '''
     rot_dim = freqs.shape[-1]
 
     # ideally t_pass is empty so rotary pos embedding is applied to all tensor t
@@ -70,6 +71,8 @@ def apply_rotary_pos_emb_bshd(t: Tensor, freqs: Tensor, rotary_interleaved: bool
 
     t = (t * cos_) + (_rotate_half(t, rotary_interleaved) * sin_)
     return torch.cat((t, t_pass), dim=-1)
+    '''
+    return torch.rope(t, freq_cis=freqs.squeeze(), rotary_interleaved=rotary_interleaved, batch_first=False, multi_latent_attention=True)
 
 
 def apply_rotary_pos_emb_thd(
