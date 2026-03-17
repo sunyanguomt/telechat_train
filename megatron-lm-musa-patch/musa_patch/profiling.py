@@ -60,7 +60,7 @@ def maybe_enable_profiling(args, global_step):
     kineto_log_level = int(os.getenv("KINETO_LOG_LEVEL", 0))
     rank = torch.distributed.get_rank()
 
-    if enable_profiling and rank < 8:
+    if enable_profiling and (rank == 0 or rank == 112 or rank == 224 or rank == 336):
         profile_freq = profile_freq
 
         # rank = torch.distributed.get_rank()

@@ -144,7 +144,44 @@ class DistributedDataParallel(_BaseDataParallel):
                 dense_params.append(param)
             else:
                 expert_parallel_params.append(param)
+        '''
+        # @sunyanguo test for gm
+        param_to_name = {}
+        dense_params = []
+        expert_parallel_params = []
+        self.params_with_grad = []
+
+        current_expert_block = []  # 用于暂存连续出现的专家参数
+
+        for name, param in self.module.named_parameters():
+            if not param.requires_grad:
+                continue
+
+            self.params_with_grad.append(param)
+            param.grad_added_to_main_grad = False
+            param_to_name[param] = name
+
+            if getattr(param, 'allreduce', True):
+                dense_params.append(param)
+            else:
+                # 检查是否为专家参数（根据名称包含 'mlp.experts'）
+                if 'mlp.experts' in name:
+                    # 是专家，加入当前块
+                    current_expert_block.append(param)
+                else:
+                    # 不是专家，先处理之前累积的专家块（逆序添加）
+                    if current_expert_block:
+                        expert_parallel_params.extend(reversed(current_expert_block))
+                        current_expert_block.clear()
+                    # 然后添加当前非专家参数
+                    expert_parallel_params.append(param)
+
+        # 循环结束后，处理可能剩余的专家块
+        if current_expert_block:
+            expert_parallel_params.extend(reversed(current_expert_block))
+        '''
         self._param_to_name = param_to_name.copy()
+        # expert_parallel_params.reverse()
 
         def _allocate_buffers_for_parameters(
             input_params, data_parallel_group, gradient_scaling_factor

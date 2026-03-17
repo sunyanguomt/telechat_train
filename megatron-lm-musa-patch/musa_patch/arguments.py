@@ -60,6 +60,8 @@ def _add_moe_args(parser):
                             'Fp32/fp64 enhances numerical stability, especially with numerous experts. '
                             'The perf impact should be negligible when used with permute fusion. '
                             'None means no changes for dtype.')
+    group.add_argument('--moe-router-fusion', action='store_true',
+                       help='Enable fusion for MoE TopK routing and aux-loss computation. This is only supported in TransformerEngine 2.7.0 and above.')
     group.add_argument('--moe-router-score-function', type=str,
                        choices=['softmax', 'sigmoid'],
                        default='softmax',
@@ -121,6 +123,8 @@ def _add_moe_args(parser):
     group.add_argument('--moe-apply-probs-on-input', action='store_true',
                        help='Apply probs before mlp activation for moe routing.')
     # MoE communication overlap arguments
+    group.add_argument('--overlap-moe-expert-parallel-comm', action='store_true',
+                       help='Overlap the EP A2A communication by batch-level overlapping in 1f1b stage.')
     group.add_argument('--delay-wgrad-compute', action='store_true',
                        help='Delay the wgrad compute for batch-level overlapping')
     group.add_argument('--moe-upcycling-granularity', type=int, default=1,
@@ -265,6 +269,8 @@ def core_transformer_config_from_args(args, config_class=None):
     # HACK(huang.huang): control dp_reduce position: tp-only-amax-red 
     config_instance.tp_only_amax_red = args.tp_only_amax_red
     ##HACK(huang.huang)
+    config_instance.seq_length = args.seq_length
+
     config_instance.offload_moe_fc1_input = args.offload_moe_fc1_input
 
     ##HACK(yiming.chen)

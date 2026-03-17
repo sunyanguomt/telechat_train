@@ -880,7 +880,6 @@ def initialize_model_parallel(
         # Set `NCCL_COLLNET_ENABLE=0` to restrict SHARP application to the dp group.
         if "NCCL_COLLNET_ENABLE" in os.environ:
             del os.environ["NCCL_COLLNET_ENABLE"]
-
     for ranks in decoder_rank_generator.get_ranks('dp'):
         group = create_group(
             ranks,
@@ -1024,7 +1023,6 @@ def initialize_model_parallel(
         os.environ["UCX_RNDV_THRESH"] = "0"
         os.environ["UCX_NET_DEVICES"] = "all"
         os.environ["UCC_CL_BASIC_TLS"] = "^sharp,nccl"
-
     for ranks in decoder_rank_generator.get_ranks('pp'):
         group = create_group(
             ranks,

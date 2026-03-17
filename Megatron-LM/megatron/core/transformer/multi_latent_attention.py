@@ -158,7 +158,6 @@ class MultiLatentAttention(Attention):
             k_channels=self.q_head_dim,
             v_channels=self.config.v_head_dim,
             cp_comm_type=cp_comm_type,
-            pg_collection=self.pg_collection,
         )
 
         # Output.

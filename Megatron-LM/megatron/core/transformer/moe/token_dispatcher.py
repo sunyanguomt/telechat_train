@@ -991,7 +991,7 @@ class _DeepepManager(_DispatchManager):
             if self.token_probs.dtype in [torch.bfloat16, torch.float16]:
                 print("DeepEP only supports float32 probs, please set --moe-router-dtype=fp32")
             self.token_probs = self.token_probs.float()  # downcast or upcast
-        hidden_states, dispatched_indices, dispatched_probs, num_tokens_per_expert, handle = (
+        hidden_states, dispatched_indices, dispatched_probs, num_tokens_per_expert, num_tokens_per_rank, handle = (
             fused_dispatch(
                 hidden_states,
                 self.token_indices,
@@ -1006,6 +1006,7 @@ class _DeepepManager(_DispatchManager):
         self.tokens_per_expert = num_tokens_per_expert
         self.dispatched_indices = dispatched_indices
         self.dispatched_probs = dispatched_probs
+        self.num_tokens_per_rank = num_tokens_per_rank
 
         return hidden_states
 

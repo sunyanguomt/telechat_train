@@ -208,12 +208,14 @@ MODEL_PARALLEL_ARGS=(
     --manual-gc-interval 100
     --empty-unused-memory-level 0
     --recompute-granularity selective
-    --recompute-modules moe_act
-    --pipeline-model-parallel-layout Ettt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|mL
+    --recompute-modules moe_act mla_up_proj layernorm
+    --decoder-first-pipeline-num-layers 12
+    --decoder-last-pipeline-num-layers 9
 
 
 )
-# --pipeline-model-parallel-layout Et*3\|\(t*3\|\)*14\|mL
+# --pipeline-model-parallel-layout Etttttt\|tttttt\|tttttt\|tttttt\|tttttt\|tttttt\|tttttt\|tttmL
+# --pipeline-model-parallel-layout Ettt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|mL
 #     --recompute-granularity selective
 #    --recompute-modules mla_up_proj
 #    --decoder-first-pipeline-num-layers 12

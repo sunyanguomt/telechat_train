@@ -389,8 +389,6 @@ def initialize_model_parallel(
         _EPX_DATA_PARALLEL_LCP = Lcp(pg, rank, epx_local_rank)
 
         logger.info(f"finish initialization _EPX_DATA_PARALLEL_LCP for epx")
-
-
     for ranks in generator_wrapper('dp'):
         group = create_group(
             ranks,
@@ -633,7 +631,6 @@ def initialize_model_parallel(
         os.environ['UCX_RNDV_THRESH'] = '0'
         os.environ['UCX_NET_DEVICES'] = 'all'
         os.environ['UCC_CL_BASIC_TLS'] = '^sharp,nccl'
-
     for ranks in generator_wrapper('pp'):
         group = create_group(
             ranks,

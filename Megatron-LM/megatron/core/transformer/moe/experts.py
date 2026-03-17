@@ -959,7 +959,6 @@ class TEGroupedMLP(MegatronModule):
 
         output = self._apply_bias(output, output_bias, tokens_per_expert, permuted_probs)
         output_bias = None
-
         return output, output_bias
 
     @expert_dist_ckpt_decorator

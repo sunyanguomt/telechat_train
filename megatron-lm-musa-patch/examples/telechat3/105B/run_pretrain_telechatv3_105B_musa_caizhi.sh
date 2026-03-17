@@ -1,6 +1,6 @@
  #!/bin/bash
  pip uninstall transformer_engine -y
- pip install /mnt/yanguo.sun/1000b-dev/TransformerEngine-1000b-dev_novpp/wheel/transformer_engine-2.0.0+2297162-cp310-cp310-linux_x86_64.whl
+ pip install /mnt/yanguo.sun/1000b-dev/TransformerEngine-1000b-dev/wheel/transformer_engine-2.0.0-cp310-cp310-linux_x86_64.whl
 
 set -u
   WORK_HOME=$1
@@ -16,9 +16,9 @@ set -u
   TOKENIZER_ARG=${11}
   RDZV_ID=${12}
 set +u
-export ENABLE_PROFILER=1
-export PROFILER_FREQ=4
-export PROFILER_WARMUP_STEPS=3
+# export ENABLE_PROFILER=1
+# export PROFILER_FREQ=4
+# export PROFILER_WARMUP_STEPS=3
 # export MUSA_LAUNCH_BLOCKING=1
 # export PROFILER_PROFILE_MEMORY=1
 # export TORCH_FORCE_WEIGHTS_ONLY_LOAD=0
@@ -42,7 +42,6 @@ export MUSA_BLOCK_SCHEDULE_MODE=1
 export MUSA_BLOCK_DISTRIBUTION_GRANULARITY=0
 export TORCH_MCCL_AVOID_RECORD_STREAMS=1
 export ENABLE_D2H_IN_PERMUTATION=0
-export USE_RECOMPUTE_VARIANCE=0
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 # export MUSA_BLOCK_ARBITRATION_MODE=2
@@ -140,12 +139,11 @@ MODEL_ARGS=(
     --mtp-num-layers 1
     --transformer-impl transformer_engine
     --distributed-backend nccl
-    --rope-type rope
-    --no-rope-fusion
     --moe-router-enable-expert-bias
+    --rope-type yarn
     --enable-experimental
-    --moe-router-fusion
 )
+#    --no-rope-fusion
 # test 236B
 # --moe-router-load-balancing-type seq_aux_loss
 # --moe-router-score-function sigmoid
@@ -207,15 +205,10 @@ MODEL_PARALLEL_ARGS=(
     --manual-gc
     --manual-gc-interval 100
     --empty-unused-memory-level 0
-    --recompute-granularity selective
-    --recompute-modules moe_act
-    --pipeline-model-parallel-layout Ettt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|mL
-
-
+    --decoder-first-pipeline-num-layers 12
+    --decoder-last-pipeline-num-layers 9
 )
-# --pipeline-model-parallel-layout Et*3\|\(t*3\|\)*14\|mL
-#     --recompute-granularity selective
-#    --recompute-modules mla_up_proj
+#    --overlap-p2p-communication
 #    --decoder-first-pipeline-num-layers 12
 #    --decoder-last-pipeline-num-layers 9
 # --recompute-granularity full

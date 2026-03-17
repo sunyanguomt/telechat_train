@@ -151,6 +151,39 @@ def num_floating_point_operations(args, batch_size):
         if args.moe_shared_expert_intermediate_size is None
         else args.moe_shared_expert_intermediate_size
     )
+    if args.num_experts is None:
+        # Every Transformer MLP is dense.
+        num_dense_layers = args.num_layers
+        num_moe_layers = 0
+        num_experts_routed_to = 0
+        last_layer_is_moe = 0
+    else:
+        # Calculate number of dense and MoE Transformer MLPs.
+        if isinstance(args.moe_layer_freq, int):
+            moe_layer_pattern = [
+                1 if (i % args.moe_layer_freq == 0) else 0 for i in range(args.num_layers)
+            ]
+        elif isinstance(args.moe_layer_freq, list):
+            moe_layer_pattern = args.moe_layer_freq
+        else:
+            raise RuntimeError("Illegal --moe-layer-freq argument provided!")
+        assert len(moe_layer_pattern) == args.num_layers, (
+            f"Invalid length of moe_layer_pattern: {len(moe_layer_pattern)}, "
+            f"expected {args.num_layers}, "
+            f"current moe layer pattern: {args.moe_layer_freq}"
+        )
+        num_moe_layers = sum(moe_layer_pattern)  # Number of 1s in `moe_layer_pattern`.
+        num_dense_layers = args.num_layers - num_moe_layers
+        num_experts_routed_to = args.moe_router_topk
+        last_layer_is_moe = moe_layer_pattern[-1]
+    if args.mtp_num_layers is not None:
+        mtp_num_layers = args.mtp_num_layers
+        num_moe_layers += last_layer_is_moe * mtp_num_layers
+        num_dense_layers += (1 - last_layer_is_moe) * mtp_num_layers
+        num_layers = args.num_layers + mtp_num_layers
+    else:
+        mtp_num_layers = 0
+        num_layers = args.num_layers
 
     moe_ffn_hidden_size = (
         args.moe_ffn_hidden_size
@@ -197,7 +230,7 @@ def num_floating_point_operations(args, batch_size):
             6
             * batch_size
             * args.seq_length
-            * args.num_layers
+            * (args.num_layers + 1)
             * (
                 # MLA Attention.
                 (
@@ -220,13 +253,15 @@ def num_floating_point_operations(args, batch_size):
                 # Shared Experts.
                 + (2 * args.hidden_size * shared_expert_ffn_hidden_size * gated_linear_multiplier)
                 # Logit.
-                + (args.padded_vocab_size * args.hidden_size / args.num_layers)
             )
+            + (args.padded_vocab_size * args.hidden_size *2) * 6 * batch_size * args.seq_length
         )
+
 
 def need_mlflow():
     return os.getenv("MLFLOW_TRACKING_URI", default=None) and \
             torch.distributed.get_rank() == (torch.distributed.get_world_size() - 1)
+
 
 
 def train_step(forward_step_func, data_iterator,

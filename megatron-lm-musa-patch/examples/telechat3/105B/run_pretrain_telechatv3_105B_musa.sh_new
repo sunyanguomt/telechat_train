@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
  pip uninstall transformer_engine -y
  pip install /mnt/yanguo.sun/1000b-dev/TransformerEngine-1000b-dev_novpp/wheel/transformer_engine-2.0.0+2297162-cp310-cp310-linux_x86_64.whl
 
@@ -16,9 +16,9 @@ set -u
   TOKENIZER_ARG=${11}
   RDZV_ID=${12}
 set +u
-export ENABLE_PROFILER=1
-export PROFILER_FREQ=4
-export PROFILER_WARMUP_STEPS=3
+# export ENABLE_PROFILER=1
+# export PROFILER_FREQ=4
+# export PROFILER_WARMUP_STEPS=3
 # export MUSA_LAUNCH_BLOCKING=1
 # export PROFILER_PROFILE_MEMORY=1
 # export TORCH_FORCE_WEIGHTS_ONLY_LOAD=0
@@ -144,7 +144,6 @@ MODEL_ARGS=(
     --no-rope-fusion
     --moe-router-enable-expert-bias
     --enable-experimental
-    --moe-router-fusion
 )
 # test 236B
 # --moe-router-load-balancing-type seq_aux_loss
@@ -207,15 +206,13 @@ MODEL_PARALLEL_ARGS=(
     --manual-gc
     --manual-gc-interval 100
     --empty-unused-memory-level 0
+    --decoder-first-pipeline-num-layers 6
+    --decoder-last-pipeline-num-layers 3
     --recompute-granularity selective
-    --recompute-modules moe_act
-    --pipeline-model-parallel-layout Ettt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|mL
+    --recompute-modules moe_act layernorm
 
 
 )
-# --pipeline-model-parallel-layout Et*3\|\(t*3\|\)*14\|mL
-#     --recompute-granularity selective
-#    --recompute-modules mla_up_proj
 #    --decoder-first-pipeline-num-layers 12
 #    --decoder-last-pipeline-num-layers 9
 # --recompute-granularity full

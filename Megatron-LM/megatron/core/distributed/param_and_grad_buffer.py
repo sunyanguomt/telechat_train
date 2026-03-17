@@ -637,6 +637,7 @@ class _ParamAndGradBuffer:
             )
 
         for param in params[::-1]:
+        # for param in params:
             # Iterate through parameters in reverse order to roughly follow backprop order.
 
             this_numel = param.data.nelement()
@@ -731,6 +732,7 @@ class _ParamAndGradBuffer:
         bucket_start_index = 0
         cur_bucket_id = 0
         for param in params[::-1]:
+        # for param in params:
             param_start_index, param_end_index, bucket_id = self.param_index_map[param]
             # For MXFP8 param: we only need to map weight gradients to the buffer.
             if not self.ddp_config.reuse_grad_buf_for_mxfp8_param_ag:

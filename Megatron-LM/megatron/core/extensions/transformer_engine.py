@@ -503,7 +503,6 @@ class TELayerNormColumnParallelLinear(te.pytorch.LayerNormLinear):
         extra_kwargs = _get_extra_te_kwargs(config)
         self.tp_size = get_pg_size(tp_group)
         self.tp_rank = get_pg_rank(tp_group)
-
         if self.config.delay_wgrad_compute:
             if is_te_min_version("2.3.0"):
                 extra_kwargs["delay_wgrad_compute"] = self.config.delay_wgrad_compute
@@ -1258,7 +1257,6 @@ if HAVE_TE and is_te_min_version("1.9.0.dev0"):
                             }
                         )
                 state_dict[f"{prefix}_extra_state"] = self._encode_extra_state(extra_state)
-
             self._register_load_state_dict_pre_hook(merge_extra_states, with_module=True)
 
         def forward(self, x, m_splits):
@@ -2085,7 +2083,7 @@ except ImportError:
     te_general_gemm = None  # type: ignore[assignment, misc]
 
 
-if HAVE_TE and is_te_min_version("2.7.0.dev"):
+if HAVE_TE:
     from transformer_engine.pytorch.router import (  # pylint: disable=unused-import
         fused_compute_score_for_moe_aux_loss,
         fused_moe_aux_loss,

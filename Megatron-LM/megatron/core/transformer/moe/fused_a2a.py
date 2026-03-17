@@ -2,7 +2,7 @@
 # Portions of this code are from DeepSeek DeepEP project
 # Copyright (c) 2025 DeepSeek
 # Licensed under the MIT License - https://github.com/deepseek-ai/DeepEP/blob/main/LICENSE
-
+import os
 
 try:
     from deep_ep import Buffer
@@ -61,7 +61,8 @@ def get_buffer(group: torch.distributed.ProcessGroup, hidden_bytes: int):
         or _buffer.num_nvl_bytes < num_nvl_bytes
         or _buffer.num_rdma_bytes < num_rdma_bytes
     ):
-        _buffer = Buffer(group, num_nvl_bytes, num_rdma_bytes)
+        use_ace = os.getenv("USE_DEEPEP_ACE", "0") == "1"
+        _buffer = Buffer(group, num_nvl_bytes, num_rdma_bytes, use_ace=use_ace, num_ace_buffers=1, train_mode=False)
     return _buffer
 
 
@@ -133,11 +134,11 @@ class FusedDispatch(torch.autograd.Function):
         ctx.allocate_on_comm_stream = allocate_on_comm_stream
         tokens_per_expert = torch.tensor(num_recv_tokens_per_expert_list)
 
-        return (recv_x, recv_token_indices, recv_token_probs, tokens_per_expert, handle)
+        return (recv_x, recv_token_indices, recv_token_probs, tokens_per_expert, num_tokens_per_rank, handle)
 
     @staticmethod
     def backward(
-        ctx, grad_output, grad_token_indices, grad_token_probs, grad_tokens_per_expert, grad_handle
+        ctx, grad_output, grad_token_indices, grad_token_probs, grad_tokens_per_expert, num_tokens_per_rank, grad_handle
     ):
         """Backward pass of fused dispatch."""
         buffer = get_buffer(ctx.group, get_hidden_bytes(grad_output))
