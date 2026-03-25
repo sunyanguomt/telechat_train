@@ -1,4 +1,19 @@
-# telechat3-105B 训练方法
+# 快速开始
+```
+# 镜像 registry.mthreads.com/mcconline/musa-train:4.3.5_tele3_105b_alinux
+# 驱动 http://swci.mthreads.com:8848/ui/buckets/sw-daily/objects?prefix=musa%2Frelease_musa_4.3.0%2F2026-01-26%2F
+# tokenizer modelscope download --model TeleAI/TeleChat3-36B-Thinking --local_dir TeleChat3-36B-Thinking
+# 数据集链接 https://www.modelscope.cn/datasets/TeleAI/TeleChat-PTD/resolve/master/data
+# 数据集 使用镜像中/home/Megatron-LM/tools/process_test_data.py 进行处理。
+# 修改 megatron-lm-musa-patch/examples/telechat3 中 hostfile和run_telechatv3_105B_musa.sh路径后
+# 执行run_telechatv3_105B_musa.sh开始训练
+```
+
+
+
+
+
+# telechat3-105B 训练方法(原电信提供)
 
 本次提供素材包括数据处理脚本、训练脚本、环境信息
 
