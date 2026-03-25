@@ -1,10 +1,4 @@
- #!/bin/bash
- pip uninstall transformer_engine -y
- pip install /mnt/yanguo.sun/1000b-dev/TransformerEngine-1000b-dev_novpp/wheel/transformer_engine-2.0.0+2297162-cp310-cp310-linux_x86_64.whl
- # cd /mnt/yanguo.sun/dianxin/mudnn/mudnn
- # bash install_mudnn.sh
- # cd -
-
+#!/bin/bash
 
 set -u
   WORK_HOME=$1
