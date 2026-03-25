@@ -1,6 +1,10 @@
  #!/bin/bash
  pip uninstall transformer_engine -y
  pip install /mnt/yanguo.sun/1000b-dev/TransformerEngine-1000b-dev_novpp/wheel/transformer_engine-2.0.0+2297162-cp310-cp310-linux_x86_64.whl
+ # cd /mnt/yanguo.sun/dianxin/mudnn/mudnn
+ # bash install_mudnn.sh
+ # cd -
+
 
 set -u
   WORK_HOME=$1
@@ -16,9 +20,9 @@ set -u
   TOKENIZER_ARG=${11}
   RDZV_ID=${12}
 set +u
-export ENABLE_PROFILER=1
-export PROFILER_FREQ=4
-export PROFILER_WARMUP_STEPS=3
+# export ENABLE_PROFILER=1
+# export PROFILER_FREQ=4
+# export PROFILER_WARMUP_STEPS=3
 # export MUSA_LAUNCH_BLOCKING=1
 # export PROFILER_PROFILE_MEMORY=1
 # export TORCH_FORCE_WEIGHTS_ONLY_LOAD=0
@@ -43,13 +47,15 @@ export MUSA_BLOCK_DISTRIBUTION_GRANULARITY=0
 export TORCH_MCCL_AVOID_RECORD_STREAMS=1
 export ENABLE_D2H_IN_PERMUTATION=0
 export USE_RECOMPUTE_VARIANCE=0
-
+export PYTORCH_MUSA_ALLOC_CONF="expandable_segments:True"
+export TORCH_MCCL_AVOID_RECORD_STREAMS=1
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 # export MUSA_BLOCK_ARBITRATION_MODE=2
 # export USE_MUSA_MOE=1
 export USE_DEEPEP_ACE=1
 MEGATRON_PATH=${PATCH_HOME}/../Megatron-LM
 export PYTHONPATH=${MEGATRON_PATH}:${PATCH_HOME}:$PYTHONPATH
+
 
 if [ ! -d "${MEGATRON_PATH}/build" ]; then
     cd "${MEGATRON_PATH}"
@@ -208,12 +214,14 @@ MODEL_PARALLEL_ARGS=(
     --manual-gc-interval 100
     --empty-unused-memory-level 0
     --recompute-granularity selective
-    --recompute-modules moe_act
-    --pipeline-model-parallel-layout Ettt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|mL
-
-
+    --recompute-modules moe_act layernorm
+    --decoder-first-pipeline-num-layers 12
+    --decoder-last-pipeline-num-layers 9
 )
-# --pipeline-model-parallel-layout Et*3\|\(t*3\|\)*14\|mL
+# --overlap-moe-expert-parallel-comm #实验性配置
+# --pipeline-model-parallel-layout Etttttt\|tttttt\|tttttt\|tttttt\|tttttt\|tttttt\|tttttt\|tttmL
+# --pipeline-model-parallel-layout Ettt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|ttt\|mL
+# --recompute-modules moe_act layernorm mla_up_proj
 #     --recompute-granularity selective
 #    --recompute-modules mla_up_proj
 #    --decoder-first-pipeline-num-layers 12
