@@ -3,7 +3,6 @@
 # See LICENSE for license information.
 
 """Efficient Cross Entropy kernels written with OpenAI Triton."""
-
 from typing import Union
 from functools import reduce
 from operator import mul
@@ -25,6 +24,8 @@ def online_softmax_kernel(
     m_d_X_y_stride,
     rank,
     n_cols,
+    ignore_idx,
+    n_non_ignore,
     BLOCK_SIZE: tl.constexpr,
 ):
     """
@@ -39,6 +40,8 @@ def online_softmax_kernel(
     m_d_X_y_stride (int): The stride of the m/d/X_y tensor.
     rank (int): The rank of this device in the TP group.
     n_cols (int): The number of columns in the input tensor.
+    ignore_idx (int): The index to ignore for loss calculation.
+    n_non_ignore: The number of non-ignored elements in the batch.
     BLOCK_SIZE (int): The block size for Triton operations.
     """
 
@@ -50,6 +53,9 @@ def online_softmax_kernel(
     # Load Y_ptr
     Y_ptr += program_id * Y_stride
     y = tl.load(Y_ptr)
+    
+    if y != ignore_idx:
+        tl.atomic_add(n_non_ignore, 1)
 
     vocab_start_idx = rank * n_cols
     vocab_end_idx = (rank + 1) * n_cols
@@ -94,7 +100,9 @@ def cross_entropy_kernel(
     m_d_X_y_stride,
     rank,
     world_size,
+    ignore_idx,
     n_cols,
+    n_rows,
     n_non_ignore,
     reduce_loss: tl.constexpr,
     label_smoothing: tl.constexpr,
@@ -114,20 +122,30 @@ def cross_entropy_kernel(
     m_d_X_y_stride: The stride of m/d/X_y tensor.
     rank (int): The rank of this device in the TP group.
     world_size (int): The size of world involved in this distributed loss calculation.
+    ignore_idx (int): Tokens to be ignored for loss and gradient calculation.
     n_cols (int): The number of columns in the input tensor.
+    n_rows (int): The number of rows in the batch (B * SQ), used for buffer indexing.
     n_non_ignore (int): The number of non-ignored elements in the batch.
     label_smoothing (float): The amount of smoothing when computing the loss, where 0.0 means no smoothing.
     BLOCK_SIZE (int): The block size for Triton operations.
     """
 
     program_id = tl.program_id(0).to(tl.int64)
-
+    n_non_ignore = tl.load(n_non_ignore)
+    
     # locate the start index
     X_ptr += program_id * X_stride
 
     # Load Y_ptr
     Y_ptr += program_id * Y_stride
     y = tl.load(Y_ptr)
+    
+    if y == ignore_idx:
+        # set all X_ptr as 0
+        for i in range(0, n_cols, BLOCK_SIZE):
+            X_offsets = i + tl.arange(0, BLOCK_SIZE)
+            tl.store(X_ptr + X_offsets, 0.0, mask=X_offsets < n_cols)
+        return
 
     loss_ptr += program_id * loss_stride
     m_d_X_y_ptr += program_id * 3 * m_d_X_y_stride
@@ -138,7 +156,7 @@ def cross_entropy_kernel(
     ori_X_y = tl.load(m_d_X_y_ptr + (2 * m_d_X_y_stride))
 
     for i in range(1, world_size):
-        offset = i * 3 * n_non_ignore * m_d_X_y_stride
+        offset = i * 3 * n_rows * m_d_X_y_stride
         access_ptr = m_d_X_y_ptr + offset
         m_new = tl.load(access_ptr)
         d_new = tl.load(access_ptr + m_d_X_y_stride)
@@ -264,6 +282,7 @@ def cross_entropy_forward(
     label_smoothing: float,
     reduce_loss: bool,
     dist_process_group: Union[dist.ProcessGroup, None],
+    ignore_idx: int,
 ):
     """Forward implementation of Cross Entropy kernel"""
 
@@ -279,6 +298,8 @@ def cross_entropy_forward(
 
     # tensor to hold this rank's m/d/X_y values
     m_d_X_y = torch.zeros(n_rows * 3, dtype=torch.float32, device=_input.device)
+    
+    n_non_ignore = torch.zeros(1, dtype=torch.int64, device=_input.device)
 
     # ensure _input and target are contiguous in the last dimension
     if _input.stride(-1) != 1:
@@ -297,10 +318,14 @@ def cross_entropy_forward(
         m_d_X_y_stride=m_d_X_y.stride(-1),
         rank=rank,
         n_cols=V,
+        ignore_idx=ignore_idx,
+        n_non_ignore=n_non_ignore,
         BLOCK_SIZE=BLOCK_SIZE,
         num_warps=32,
     )
 
+    n_non_ignore = torch.clamp(n_non_ignore, min=1)
+    
     world_size = 1 if dist_process_group is None else dist.get_world_size(dist_process_group)
 
     if world_size > 1:
@@ -322,15 +347,17 @@ def cross_entropy_forward(
         m_d_X_y_stride=m_d_X_y_gathered.stride(-1),
         rank=rank,
         world_size=world_size,
+        ignore_idx=ignore_idx,
         n_cols=V,
-        n_non_ignore=n_rows,
+        n_rows=n_rows,
+        n_non_ignore=n_non_ignore,
         reduce_loss=reduce_loss,
         label_smoothing=label_smoothing,
         BLOCK_SIZE=BLOCK_SIZE,
         num_warps=32,
     )
 
-    loss = torch.reshape(loss_1d, (B, SQ)) if not reduce_loss else (torch.sum(loss_1d) / n_rows)
+    loss = torch.reshape(loss_1d, (B, SQ)) if not reduce_loss else (torch.sum(loss_1d) / n_non_ignore)
 
     return loss, _input
 

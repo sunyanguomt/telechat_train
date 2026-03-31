@@ -9,4 +9,5 @@ rm -f transformer_engine_torch.cpython-310-x86_64-linux-gnu.so
 # install TransformerEngine
 export NVTE_FRAMEWORK=musa
 # pip install --no-build-isolation -v . 2>&1 | tee install.log
-pip wheel . --wheel-dir=./wheel  --no-deps --use-pep517 --no-build-isolation
+pip wheel . --wheel-dir=./wheel --no-deps --use-pep517 --no-build-isolation
+pip install ./wheel/*
