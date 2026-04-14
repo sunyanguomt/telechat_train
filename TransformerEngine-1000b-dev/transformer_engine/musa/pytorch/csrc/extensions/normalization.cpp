@@ -169,8 +169,11 @@ std::vector<py::object> rmsnorm_bwd(const at::Tensor &dz, const at::Tensor &x,
   auto dx_cu = makeTransformerEngineTensor(dx);
   auto dgamma_cu = makeTransformerEngineTensor(dgamma);
 
+  // Handle zero_centered_gamma: use (1 + gamma) instead of gamma
+  at::Tensor effective_gamma = zero_centered_gamma ? (gamma_ + 1.0) : gamma_;
+
   std::tie(dx, dgamma) = at::_fused_rmsnorm_backward(
-      dz_, rsigma_, x_, {x_.size(-1)}, 1e-5, gamma_);
+      dz_, rsigma_, x_, {x_.size(-1)}, 1e-5, effective_gamma);
 
   // This call populates tensors with the required config.
   // nvte_rmsnorm_bwd(dz_cu.data(), x_cu.data(), rsigma_cu.data(), gamma_cu.data(), dx_cu.data(),
@@ -217,6 +220,7 @@ std::vector<py::object> rmsnorm_fwd(const py::handle &input, const py::handle &w
   auto rsigma_cu = makeTransformerEngineTensor(rsigma);
   const at::Tensor& th_input = input.cast<at::Tensor>();
   const at::Tensor& th_weight = weight.cast<at::Tensor>();
+  at::Tensor effective_weight = zero_centered_gamma ? (th_weight + 1.0) : th_weight;
 
   if (my_quantizer->get_scaling_mode() == NVTE_MXFP8_1D_SCALING) {
     // Use high precision output from normalization
@@ -225,7 +229,7 @@ std::vector<py::object> rmsnorm_fwd(const py::handle &input, const py::handle &w
 
     at::Tensor th_out = ln_output.cast<at::Tensor>();
     std::tie(th_out, rsigma) = at::musa::FusedRMSNormForwardOut(
-        th_input, th_out, {th_input.size(-1)}, eps, th_weight);
+        th_input, th_out, {th_input.size(-1)}, eps, effective_weight);
 
   } else {
     if (ln_out.is_none()) {
@@ -236,7 +240,7 @@ std::vector<py::object> rmsnorm_fwd(const py::handle &input, const py::handle &w
 
     at::Tensor th_out = ln_out.cast<at::Tensor>();
     std::tie(th_out, rsigma) = at::musa::FusedRMSNormForwardOut(
-        th_input, th_out, {th_input.size(-1)}, eps, th_weight);
+        th_input, th_out, {th_input.size(-1)}, eps, effective_weight);
 
   }
   // auto rsigma_cu = makeTransformerEngineTensor(rsigma);
